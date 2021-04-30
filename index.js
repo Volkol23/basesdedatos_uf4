@@ -21,20 +21,19 @@ mongo.connect(server_url, (err, server) => {
 
 function sendChat(response){
 	let cursor = chat_db.collection("chat").find({});
-
-	let data = [];
-	cursor.each((err, doc) => {
-		if (err){
-			console.log("Error al leer al documento");
-			throw err;
-		}
-		data.push(doc);
-//		response.write("<p>Ahora viene el chat</p>");
-//		response.end();
-
+		
+	cursor.toArray().then((data) => {
+		console.log(data);
+		response.writeHead(200, {'Content-Type': 'text/plain'}); 
+		response.write(JSON.stringify(data));
+		response.end();
 	});
-
-	console.log(data);
+/*
+	chat.catch(() => {
+		response.writeHead(404, {'Content-Type': 'text/html'});
+		response.end();
+	});
+*/
 }
 
 
@@ -48,8 +47,6 @@ http.createServer((request, response) => {
 
 	if(request.url == "/chat"){
 		console.log("Nos piden el chat de mongo");
-		response.writeHead(200, {'Content-Type': 'text/plain'}); 
-
 		sendChat(response);
 
 	}else{
