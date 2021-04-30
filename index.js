@@ -23,7 +23,7 @@ function sendChat(response){
 	let cursor = chat_db.collection("chat").find({});
 		
 	cursor.toArray().then((data) => {
-		console.log(data);
+		//console.log(data);
 		response.writeHead(200, {'Content-Type': 'text/plain'}); 
 		response.write(JSON.stringify(data));
 		response.end();
@@ -35,7 +35,26 @@ function sendChat(response){
 	});
 */
 }
+function sendData(request,response){
+	let body = [];
 
+	/*En cada bloques de datos enviado, recibido se añade en body*/
+	request.on('data', chunk =>{
+		body.push(chunk)
+
+	}).on('end', () => {
+		let chat_data = JSON.parse(Buffer.concat(body).toString());
+		
+		let chat = {
+			user: chat_data.chat_user,
+			msg: chat_data.chat_msg,
+			date: Date.now()
+		}
+		//console.log(chat);
+		chat_db.collection('chat').insertOne(chat);
+	});
+	response.end();
+}
 
 
 console.log("Inicializando el servidor chat");
@@ -46,10 +65,14 @@ http.createServer((request, response) => {
 	console.log("Archivo: "+request.url);
 
 	if(request.url == "/chat"){
-		console.log("Nos piden el chat de mongo");
+		//console.log("Nos piden el chat de mongo");
 		sendChat(response);
 
-	}else{
+	}else if(request.url == "/submit"){
+		console.log("Envío de datos");
+		sendData(request,response);
+	}
+	else{
 		public_files.serve(request, response);
 	}
 
