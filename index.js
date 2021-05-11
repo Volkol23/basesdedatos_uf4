@@ -18,6 +18,19 @@ mongo.connect(server_url, (err, server) => {
 	chat_db = server.db("amongmeme");
 
 });
+function sendLastChat(request,response){
+	let info = request.url.split("=");
+	let query = {
+		date: { $gt : parseInt(info[1]) }
+	};
+		let cursor = chat_db.collection("chat").find(query);
+		
+		cursor.toArray().then((data) => {
+			response.writeHead(200, {'Content-Type': 'text/plain'}); 
+			response.write(JSON.stringify(data));
+			response.end();
+		});
+}
 
 function sendChat(response){
 	let cursor = chat_db.collection("chat").find({});
@@ -35,6 +48,33 @@ function sendChat(response){
 	});
 */
 }
+function sendRecentChat(response){
+	const estimated_count = chat_db.collection("chat").estimatedDocumentCount();
+	estimated_count.then( (count) => {
+		console.log(count);
+		const MAX = 5;
+		let cursor = chat_db.collection("chat").find({},{
+			skip: count - MAX,
+			limit: MAX,
+			sort: {$natural:1}
+		});
+		
+		cursor.toArray().then((data) => {
+			//console.log(data);
+			response.writeHead(200, {'Content-Type': 'text/plain'}); 
+			response.write(JSON.stringify(data));
+			response.end();
+		});
+
+	});
+/*
+	chat.catch(() => {
+		response.writeHead(404, {'Content-Type': 'text/html'});
+		response.end();
+	});
+*/
+}
+
 function sendData(request,response){
 	let body = [];
 
@@ -65,16 +105,22 @@ http.createServer((request, response) => {
 	console.log("Archivo: "+request.url);
 
 	if(request.url == "/chat"){
-		//console.log("Nos piden el chat de mongo");
+		console.log("Nos piden el chat de mongo");
 		sendChat(response);
 
 	}else if(request.url == "/submit"){
 		console.log("Envío de datos");
 		sendData(request,response);
-	}
-	else{
+	}else if(request.url == "/recent"){
+		console.log("Nos piden los mensajes recientes del chat");
+		sendRecentChat(response);
+	}else if(request.url.startsWith("/chat")){
+		console.log("Enviar los ulimos mensajes")
+		sendLastChat(request,response);
+	}else{
 		public_files.serve(request, response);
 	}
+
 
 }).listen(8080);
 

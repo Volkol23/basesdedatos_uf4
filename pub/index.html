@@ -13,15 +13,35 @@
 	</p>
 	</form>
 	<div id="chat">
+		<ul id="chat-msgs">
+		</ul>
 	</div>
 	<script>
+	let lastDate = 0;
+	function printChat(data){
+		let lista = "";
+		for (let i = 0; i < data.length; i++){
+							
+			let dateObject = new Date(data[i].date).toLocaleString();
+			console.log(dateObject);
+			lista += "<li>("+dateObject+") "+data[i].user+": "+data[i].msg+"</li>";
+			
+		}
+		document.getElementById("chat-msgs").innerHTML += lista;
+	}
+
+	function setLastDate(data){
+		lastDate = data[data.length - 1].date;
+	}
+
 	const refresh_time = 500;
 
 	document.getElementById("chat-form").addEventListener("submit", e => {
 		e.preventDefault();
 		let user = document.getElementById("user").value;
 		let msg = document.getElementById("msg").value;
-		
+		document.getElementById("msg").value = "";
+		document.getElementById("msg").focus();
 		fetch("/submit", {
 			method: "POST",
 			headers: {
@@ -34,21 +54,34 @@
 		});
 	});
 
+	fetch("/recent")
+		.then((response) => response.json())
+		.then((data) => {
+			printChat(data);
+			setLastDate(data);
+	});
+
+	setInterval(() => {
+			fetch("/chat?last="+lastDate)
+				.then((response) => response.json())
+				.then((data) => {
+					if(data.length == 0) 
+						return;
+
+					printChat(data);
+					setLastDate(data);
+		});
+	}, refresh_time);
+
+	/*
 		setInterval(() => {
 			fetch("/chat")
 					.then((response) => response.json())
 					.then((data) => {
-						let lista = "";
-						for (let i = 0; i < data.length; i++){
-							
-							let dateObject = new Date(data[i].date).toLocaleString();
-							console.log(dateObject);
-							lista += "<li>("+dateObject+") "+data[i].user+": "+data[i].msg+"</li>";
-
-						}
-						document.getElementById("chat").innerHTML = "<ul>"+lista+"</ul>";
-				});
+						printChat(data);
+			});
 		}, refresh_time);
+		*/
 	</script>
 </body>
 </html>
